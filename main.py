@@ -4,6 +4,7 @@ from config import settings
 import youtube_dl
 import os
 import ffmpeg
+import lavalink
 
 bot = commands.Bot(command_prefix=settings['prefix'])  # создание "тела" бота
 
@@ -25,12 +26,32 @@ async def play(ctx, url):
     if not connection:
         await voice.channel.connect()
         connection = True
+    server = ctx.message.guild
+
+    song_there = os.path.isfile("song.mp3")
+    try:
+        if song_there:
+            os.remove("song.mp3")
+    except PermissionError:
+        return
+
     voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    voice.play(url)
 
-
-
-
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+    }
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+    for file in os.listdir("./"):
+        if file.endswith(".mp3"):
+            os.rename(file, "song.mp3")
+    if connection:
+        voice.play(discord.FFmpegPCMAudio("song.mp3"))
 
 
 @bot.command()
