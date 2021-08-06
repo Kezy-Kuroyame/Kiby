@@ -19,14 +19,15 @@ async def hello(ctx):
 
 
 @bot.command()
-async def play(ctx, url: str):
+async def play(ctx, url):
     global connection
-    voice = ctx.message.author.voice.channel
+    voice = ctx.message.author.voice
     if not connection:
         await voice.channel.connect()
         connection = True
-    else:
-        voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    voice.play(url)
+
 
 
 
@@ -50,17 +51,6 @@ async def pause(ctx):
         await ctx.send('ну поставил и чо')
     else:
         await ctx.send('ты шо дебик, я не в голосовом')
-
-
-# @bot.command()
-# async def resume(ctx):
-#     if connection:
-#         voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-#         if voice.is_paused():
-#             voice.resume()
-#             await ctx.send('леееетс гооооу')
-#         else:
-#             await ctx.send('да я и не останавливался')
 
 
 @bot.command()
