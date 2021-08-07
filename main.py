@@ -1,10 +1,11 @@
 import discord
 from discord.ext import commands
 from config import settings
-import youtube_dl
-import os
-import ffmpeg
-import lavalink
+from youtube_dl import YoutubeDL
+import asyncio
+import time
+
+
 
 client = commands.Bot(command_prefix=settings['prefix'])  # создание "тела" бота
 
@@ -12,6 +13,7 @@ players = {}
 play_queue = []
 connection = False
 count_songs = 0
+songs = []
 
 
 @client.command()
@@ -27,35 +29,52 @@ async def play(ctx, url):
     voice_client = discord.utils.get(client.voice_clients, guild=ctx.guild)
     try:
         voice_client.is_connected()
-        print('2')
     except:
         await voice.channel.connect()
-    print('3')
     voice_client = discord.utils.get(client.voice_clients, guild=ctx.guild)
-    server = ctx.message.guild
+    ydl_options = {'format': 'bestaudio', 'noplaylist': 'True'}
+    ffmpeg_options = {
+        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
 
-    song_there = os.path.isfile("song.mp3")
+    with YoutubeDL(ydl_options) as ydl:
+        info = ydl.extract_info(url, download=False)
+    url = info['url']
+    song = info['title']
+    duration = info['duration']
+
+    durations.append(duration)
+    songs.append(song)
+    play_queue.append(url)
+
+    while play_queue:
+        if not voice_client.is_playing():
+            voice_client.play(discord.FFmpegPCMAudio(play_queue[0], **ffmpeg_options))
+            play_queue.pop(0)
+            songs.pop(0)
+        await asyncio.sleep(durations[0])
+        durations.pop(0)
+
+
+
+
+@client.command()
+async def queue(ctx):
+    text_channel = ctx.message.author
+    await ctx.send(embed=discord.Embed(title=songs))
+
+
+
+@client.command()
+async def playE(ctx, url):
+    play_queue.append(url)
+
+    voice = ctx.message.author.voice
+    voice_client = discord.utils.get(client.voice_clients, guild=ctx.guild)
     try:
-        if song_there:
-            os.remove("song.mp3")
-    except PermissionError:
-        return
+        voice_client.is_connected()
+    except:
+        await voice.channel.connect()
 
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-    }
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
-    for file in os.listdir("./"):
-        if file.endswith(".mp3"):
-            os.rename(file, "song.mp3")
-
-    voice_client.play(discord.FFmpegPCMAudio("song.mp3"))
 
 
 @client.command()
