@@ -6,26 +6,32 @@ import os
 import ffmpeg
 import lavalink
 
-bot = commands.Bot(command_prefix=settings['prefix'])  # создание "тела" бота
+client = commands.Bot(command_prefix=settings['prefix'])  # создание "тела" бота
 
 players = {}
 play_queue = []
 connection = False
+count_songs = 0
 
 
-@bot.command()
+@client.command()
 async def hello(ctx):
     author = ctx.message.author  # Объявляем переменную author и записываем туда информацию об авторе.
     await ctx.send(f'Hello, {author.mention}!')
 
 
-@bot.command()
+@client.command()
 async def play(ctx, url):
-    global connection
+    global count_songs
     voice = ctx.message.author.voice
-    if not connection:
+    voice_client = discord.utils.get(client.voice_clients, guild=ctx.guild)
+    try:
+        voice_client.is_connected()
+        print('2')
+    except:
         await voice.channel.connect()
-        connection = True
+    print('3')
+    voice_client = discord.utils.get(client.voice_clients, guild=ctx.guild)
     server = ctx.message.guild
 
     song_there = os.path.isfile("song.mp3")
@@ -34,8 +40,6 @@ async def play(ctx, url):
             os.remove("song.mp3")
     except PermissionError:
         return
-
-    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -50,11 +54,11 @@ async def play(ctx, url):
     for file in os.listdir("./"):
         if file.endswith(".mp3"):
             os.rename(file, "song.mp3")
-    if connection:
-        voice.play(discord.FFmpegPCMAudio("song.mp3"))
+
+    voice_client.play(discord.FFmpegPCMAudio("song.mp3"))
 
 
-@bot.command()
+@client.command()
 async def leave(ctx):
     global connection
     if connection:
@@ -63,8 +67,7 @@ async def leave(ctx):
     else:
         await ctx.send("да алё, я и так офнут")
 
-
-@bot.command()
+@client.command()
 async def pause(ctx):
     voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     if voice.is_playing():
@@ -74,9 +77,10 @@ async def pause(ctx):
         await ctx.send('ты шо дебик, я не в голосовом')
 
 
-@bot.command()
+@client.command()
 async def stop(ctx):
     voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     voice.stop()
 
-bot.run(settings['token'])
+
+client.run(settings['token'])
