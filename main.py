@@ -4,6 +4,8 @@ from config import settings
 from youtube_dl import YoutubeDL
 import asyncio
 import time
+from requests import get
+
 
 
 
@@ -23,7 +25,7 @@ async def hello(ctx):
 
 
 @client.command()
-async def play(ctx, url):
+async def play(ctx, *arg):
     global count_songs
     voice = ctx.message.author.voice
     voice_client = discord.utils.get(client.voice_clients, guild=ctx.guild)
@@ -36,11 +38,18 @@ async def play(ctx, url):
     ffmpeg_options = {
         'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
 
+    arg = " ".join(arg)
     with YoutubeDL(ydl_options) as ydl:
-        info = ydl.extract_info(url, download=False)
-    url = info['url']
-    song = info['title']
-    duration = info['duration']
+        try:
+            get(arg)
+        except:
+            video = ydl.extract_info(f"ytsearch:{arg}", download=False)['entries'][0]
+            await ctx.send('видосик: ' + video['webpage_url'])
+        else:
+            video = ydl.extract_info(arg, download=False)
+    url = video['url']
+    song = video['title']
+    duration = video['duration']
 
     durations.append(duration)
     songs.append(song)
@@ -100,6 +109,23 @@ async def pause(ctx):
 async def stop(ctx):
     voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     voice.stop()
+
+
+@client.command()
+async def colorize(ctx):
+    r, g, b = 255, 255, 255
+    roles = ctx.message.author.roles
+    role_name = roles[-1]
+    role = discord.utils.get(ctx.guild.roles, name=str(role_name))
+    while True:
+        print(g, b)
+        print(discord.Colour.from_rgb(r, g, b))
+        await role.edit(color=(discord.Colour.from_rgb(r, g, b)))
+        g -= 5
+        b -= 5
+
+
+
 
 
 client.run(settings['token'])
