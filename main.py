@@ -24,6 +24,20 @@ async def hello(ctx):
     await ctx.send(f'Hello, {author.mention}!')
 
 
+def que(voice_client):
+
+    ffmpeg_options = {
+        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
+
+    songs.pop(0)
+    if songs:
+        try:
+            if voice_client.is_connected():
+                return discord.FFmpegPCMAudio(song, **ffmpeg_options)
+        except:
+            return
+
+
 @client.command()
 async def play(ctx, *arg):
     global count_songs
@@ -57,33 +71,16 @@ async def play(ctx, *arg):
 
     while play_queue:
         if not voice_client.is_playing():
-            voice_client.play(discord.FFmpegPCMAudio(play_queue[0], **ffmpeg_options))
-            play_queue.pop(0)
-            songs.pop(0)
-        await asyncio.sleep(durations[0])
-        durations.pop(0)
-
+            voice_client.play(discord.FFmpegPCMAudio(play_queue[0], **ffmpeg_options), after=que(voice_client))
+        # await asyncio.sleep(durations[0])
+        # durations.pop(0)
 
 
 
 @client.command()
-async def queue(ctx):
+async def q(ctx):
     text_channel = ctx.message.author
     await ctx.send(embed=discord.Embed(title=songs))
-
-
-
-@client.command()
-async def playE(ctx, url):
-    play_queue.append(url)
-
-    voice = ctx.message.author.voice
-    voice_client = discord.utils.get(client.voice_clients, guild=ctx.guild)
-    try:
-        voice_client.is_connected()
-    except:
-        await voice.channel.connect()
-
 
 
 @client.command()
@@ -123,7 +120,6 @@ async def colorize(ctx):
         await role.edit(color=(discord.Colour.from_rgb(r, g, b)))
         g -= 5
         b -= 5
-
 
 
 
